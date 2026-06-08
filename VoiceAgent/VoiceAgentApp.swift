@@ -7,23 +7,35 @@ private struct SupabaseTokenSource: EndpointTokenSource {
 
 @main
 struct VoiceAgentApp: App {
-    private let session = Session(
-        tokenSource: SupabaseTokenSource(
+    private let tokenSource: CachingTokenSource
+    private let session: Session
+
+    init() {
+        let ts = SupabaseTokenSource(
             url: URL(string: "https://vcxwsuawqenaecvyvsnd.supabase.co/functions/v1/livekit-token")!
-        ).cached(),
-        options: SessionOptions(room: Room(roomOptions: RoomOptions(
-            defaultScreenShareCaptureOptions: ScreenShareCaptureOptions(useBroadcastExtension: true)
-        )))
-    )
+        ).cached()
+        tokenSource = ts
+        session = Session(
+            tokenSource: ts,
+            options: SessionOptions(room: Room(roomOptions: RoomOptions(
+                defaultScreenShareCaptureOptions: ScreenShareCaptureOptions(useBroadcastExtension: true)
+            )))
+        )
+    }
 
     var body: some Scene {
         WindowGroup {
-            AppView()
+            RootView()
                 .environmentObject(session)
                 .environmentObject(LocalMedia(session: session))
                 .environment(\.voiceEnabled, true)
                 .environment(\.videoEnabled, true)
                 .environment(\.textEnabled, true)
+                .onChange(of: session.isConnected) { _, isConnected in
+                    if !isConnected {
+                        Task { await tokenSource.invalidate() }
+                    }
+                }
         }
         #if os(macOS)
         .defaultSize(width: 900, height: 900)
