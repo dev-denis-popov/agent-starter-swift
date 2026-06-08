@@ -1,20 +1,16 @@
 import LiveKit
 import SwiftUI
 
+private struct SupabaseTokenSource: EndpointTokenSource {
+    let url: URL
+}
+
 @main
 struct VoiceAgentApp: App {
-    /// To use the LiveKit Cloud sandbox (development only):
-    /// - Enable the token server from your project's Options on the
-    ///   Settings page: https://cloud.livekit.io/projects/p_/settings/project
-    /// - Create a .env.xcconfig file with your LIVEKIT_SANDBOX_ID
-    private static let sandboxID = Bundle.main.object(
-        forInfoDictionaryKey: "LiveKitSandboxId"
-    ) as? String ?? ""
-
-    /// For production, replace the `SandboxTokenSource` with an
-    /// `EndpointTokenSource` or your own `TokenSourceConfigurable`.
     private let session = Session(
-        tokenSource: SandboxTokenSource(id: Self.sandboxID).cached(),
+        tokenSource: SupabaseTokenSource(
+            url: URL(string: "https://vcxwsuawqenaecvyvsnd.supabase.co/functions/v1/livekit-token")!
+        ).cached(),
         options: SessionOptions(room: Room(roomOptions: RoomOptions(
             defaultScreenShareCaptureOptions: ScreenShareCaptureOptions(useBroadcastExtension: true)
         )))

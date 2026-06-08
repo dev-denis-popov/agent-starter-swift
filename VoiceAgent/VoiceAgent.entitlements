@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.livekit.example.VoiceAssistant</string>
+		<string>group.io.unitcore.UnitcoreAgent</string>
 	</array>
 </dict>
 </plist>
