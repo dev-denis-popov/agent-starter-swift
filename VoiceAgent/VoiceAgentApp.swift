@@ -7,16 +7,17 @@ private struct SupabaseTokenSource: EndpointTokenSource {
 
 @main
 struct VoiceAgentApp: App {
-    private let tokenSource: CachingTokenSource
     private let session: Session
 
     init() {
-        let ts = SupabaseTokenSource(
+        // Each fetch mints a fresh room + participant identity and dispatches the
+        // agent, so the token must NOT be cached: a cached token would reconnect to
+        // the previous (now empty, agent-departed) room and the user couldn't talk.
+        let tokenSource = SupabaseTokenSource(
             url: URL(string: "https://vcxwsuawqenaecvyvsnd.supabase.co/functions/v1/livekit-token")!
-        ).cached()
-        tokenSource = ts
+        )
         session = Session(
-            tokenSource: ts,
+            tokenSource: tokenSource,
             options: SessionOptions(room: Room(roomOptions: RoomOptions(
                 defaultScreenShareCaptureOptions: ScreenShareCaptureOptions(useBroadcastExtension: true)
             )))
@@ -31,11 +32,6 @@ struct VoiceAgentApp: App {
                 .environment(\.voiceEnabled, true)
                 .environment(\.videoEnabled, true)
                 .environment(\.textEnabled, true)
-                .onChange(of: session.isConnected) { _, isConnected in
-                    if !isConnected {
-                        Task { await tokenSource.invalidate() }
-                    }
-                }
         }
         #if os(macOS)
         .defaultSize(width: 900, height: 900)
