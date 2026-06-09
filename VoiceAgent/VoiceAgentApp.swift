@@ -3,6 +3,18 @@ import SwiftUI
 
 private struct SupabaseTokenSource: EndpointTokenSource {
     let url: URL
+
+    // Forward the signed-in user's Supabase JWT so the `livekit-token` edge
+    // function can authenticate the user and embed it in the participant
+    // metadata. The agent reads it back to act on behalf of the user (its MCP
+    // tool calls run RLS-scoped to this user). `currentSession` is read on each
+    // fetch so the latest (auto-refreshed) access token is always used.
+    var headers: [String: String] {
+        guard let token = SupabaseService.client.auth.currentSession?.accessToken else {
+            return [:]
+        }
+        return ["Authorization": "Bearer \(token)"]
+    }
 }
 
 @main

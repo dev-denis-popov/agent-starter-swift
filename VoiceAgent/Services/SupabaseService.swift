@@ -9,7 +9,10 @@ import Foundation
 import Supabase
 
 final class SupabaseService {
-    static let client: SupabaseClient = SupabaseClient(
+    // `nonisolated` so the shared client can be reached from nonisolated
+    // contexts (e.g. the token source's `headers`). Safe: SupabaseClient is
+    // Sendable and this is an immutable `let`.
+    nonisolated static let client: SupabaseClient = SupabaseClient(
         supabaseURL: URL(string: "https://vcxwsuawqenaecvyvsnd.supabase.co")!,
         supabaseKey: "sb_publishable_Ublx3fS9Ip4-FonoUW29uA_uuoFvNxw",
         options: SupabaseClientOptions(auth: .init(emitLocalSessionAsInitialSession: true))
