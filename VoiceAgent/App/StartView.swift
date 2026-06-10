@@ -1,6 +1,5 @@
 import LiveKitComponents
 import SwiftUI
-import WakeWord
 
 /// The initial view that is shown when the app is not connected to the server.
 struct StartView: View {
@@ -8,13 +7,6 @@ struct StartView: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Namespace private var button
-
-    /// Set to `false` to fall back to button-only connect (no wake-word).
-    private let wakeWordEnabled = true
-
-    /// Optional hands-free wake-word listener. `nil` if the classifier is
-    /// missing. Runs only while this (disconnected) view is shown.
-    @State private var wakeword = try? WakewordEngine()
 
     var body: some View {
         VStack(spacing: 8 * .grid) {
@@ -24,28 +16,10 @@ struct StartView: View {
         .padding(.horizontal, horizontalSizeClass == .regular ? 32 * .grid : 16 * .grid)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom, content: tip)
-        .onAppear { if wakeWordEnabled { startWakeword() } }
-        .onDisappear { wakeword?.stopListening() }
         #if os(visionOS)
             .glassBackgroundEffect()
             .frame(maxWidth: 175 * .grid)
         #endif
-    }
-
-    /// Listen for "Hey LiveKit"; on detection, release the mic and connect.
-    private func startWakeword() {
-        guard let wakeword else { return }
-        wakeword.onWake = { [weak wakeword] in
-            // Stop our engine but leave the audio session active so LiveKit can
-            // reconfigure it for the call without a deactivate/activate cycle
-            // (which stalls WebRTC's audio unit → publish timeout).
-            wakeword?.stopListening(handoff: true)
-            Task {
-                try? await Task.sleep(nanoseconds: 300_000_000)
-                await session.start()
-            }
-        }
-        wakeword.startListening()
     }
 
     private func bars() -> some View {
